@@ -149,3 +149,4 @@
 2024-12-14T03:07:02 - INFO - Emails have been saved to emails.json.
 2024-12-14T03:17:11 - DEBUG - Using proactor: IocpProactor
 2024-12-14T03:17:11 - INFO - Copied credentials.example.json to credentials.json.
+2024-12-14T03:20:26 - DEBUG - Using proactor: IocpProactor
