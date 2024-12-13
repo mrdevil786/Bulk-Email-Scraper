@@ -1,17 +1,10 @@
 import subprocess
 import sys
 import importlib
-import requests
-from bs4 import BeautifulSoup
-import re
-import json
-import os
-import time
-import logging
-import random
-from requests.adapters import HTTPAdapter
-from urllib3.util.retry import Retry
 import importlib.metadata
+import logging
+import shutil
+import os
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 logger = logging.getLogger()
@@ -24,25 +17,39 @@ def install_package(package):
         logger.error(f"Error installing package {package}: {e}")
         sys.exit(1)
 
-def is_package_installed(package):
-    try:
-        importlib.import_module(package)
-        return True
-    except ImportError:
-        return False
-
 def ensure_packages_installed(packages):
     installed_packages = {dist.metadata['Name'].lower() for dist in importlib.metadata.distributions()}
-
     for package in packages:
         if package.lower() not in installed_packages:
             logger.info(f"Package {package} not found. Installing...")
             install_package(package)
 
-required_packages = ['requests', 'beautifulsoup4']
+required_packages = [
+    'requests',
+    'beautifulsoup4',
+    'urllib3'
+]
+
 ensure_packages_installed(required_packages)
 
+import requests
+from bs4 import BeautifulSoup
+import re
+import json
+import time
+import random
+from requests.adapters import HTTPAdapter
+from urllib3.util.retry import Retry
+
 def load_credentials(filename='credentials.json'):
+    if not os.path.exists(filename):
+        example_filename = 'credentials.example.json'
+        if os.path.exists(example_filename):
+            shutil.copy(example_filename, filename)
+            logger.info(f"Copied {example_filename} to {filename}.")
+        else:
+            logger.error(f"Neither {filename} nor {example_filename} found.")
+            sys.exit(1)
     try:
         with open(filename, 'r') as f:
             credentials = json.load(f)
@@ -84,20 +91,16 @@ def google_search(query, api_key, cx, num_results=10, user_agents=None):
         except requests.RequestException as e:
             logger.error(f"Error during Google Search API request: {e}")
             break
-        
         if 'items' in data:
             search_results.extend(item['link'] for item in data['items'])
-        
         if 'nextPage' not in data.get('queries', {}):
             break
-        
         start_index += 10
 
     return search_results[:num_results]
 
 def extract_emails(url, user_agents):
     session = create_session(user_agents)
-    
     try:
         logger.info(f"Fetching URL: {url}")
         response = session.get(url, timeout=15)
@@ -108,20 +111,16 @@ def extract_emails(url, user_agents):
     except requests.RequestException as e:
         logger.warning(f"Error fetching URL {url}: {e}")
         return []
-    
     try:
         soup = BeautifulSoup(response.text, 'html.parser')
         page_text = soup.get_text()
         email_pattern = r'[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}'
         emails = re.findall(email_pattern, page_text)
-        
         cleaned_emails = []
         for email in emails:
             email = re.sub(r'(Address|Building)$', '', email)
             cleaned_emails.append(email)
-        
         return list(set(cleaned_emails))
-    
     except Exception as e:
         logger.error(f"Error processing page {url}: {e}")
         return []
@@ -135,9 +134,7 @@ def save_emails_to_json(emails, filename='email.json'):
             existing_emails = []
     else:
         existing_emails = []
-    
     all_emails = set(existing_emails + emails)
-    
     try:
         with open(filename, 'w') as f:
             json.dump(list(all_emails), f, indent=4)
@@ -161,22 +158,17 @@ if __name__ == "__main__":
     except Exception as e:
         logger.error(f"Fatal error: {e}")
         sys.exit(1)
-    
     query = input("Enter your search query: ").strip()
     try:
         num_results = int(input("Enter the number of results you want to extract: ").strip())
     except ValueError:
         logger.error("Number of results must be a valid integer.")
         sys.exit(1)
-    
     validate_input(query, num_results)
-    
     search_results = google_search(query, api_key, cx, num_results=num_results, user_agents=user_agents)
-    
     if not search_results:
         logger.info("No search results found.")
         sys.exit(0)
-    
     all_emails = []
     for idx, url in enumerate(search_results):
         logger.info(f"Processing {url} ({idx+1}/{len(search_results)})")
@@ -184,11 +176,9 @@ if __name__ == "__main__":
         if emails:
             logger.info(f"Found {len(emails)} email(s) on {url}")
             all_emails.extend(emails)
-        
         if all_emails:
             save_emails_to_json(all_emails)
             logger.info("Emails saved so far. Continuing...")
-
     if all_emails:
         logger.info(f"Total {len(all_emails)} email(s) found and saved.")
         save_emails_to_json(all_emails)
