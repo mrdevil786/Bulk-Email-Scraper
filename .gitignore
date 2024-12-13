@@ -43,6 +43,7 @@ config.json
 # Logs
 *.log
 *.log.*
+app.log
 
 # Operating system files
 .DS_Store
