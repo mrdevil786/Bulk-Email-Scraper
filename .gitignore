@@ -1,2 +1,63 @@
+# Python bytecode files
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Virtual environment directories
+env/
+venv/
+*.env
+*.venv
+
+# IDE/editor directories and files
+.vscode/
+.idea/
+*.iml
+*.swp
+
+# Distribution / packaging
+*.egg-info/
+dist/
+build/
+eggs/
+lib/
+lib64/
+share/python-wheels/
+
+# Python packaging
+*.egg
+*.tar.gz
+*.whl
+
+# Credentials, sensitive files, and email storage
 credentials.json
 emails.json
+config.json
+*.key
+*.pem
+
+# Jupyter Notebooks
+.ipynb_checkpoints/
+
+# Logs
+*.log
+*.log.*
+
+# Operating system files
+.DS_Store
+Thumbs.db
+
+# Python test coverage
+.coverage
+.coverage.*
+
+# pytest
+.cache/
+nosetests.xml
+coverage.xml
+*.cover
+*.hypothesis/
+
+# Sphinx documentation
+docs/_build/
